@@ -47,12 +47,13 @@ module EnvUtil
   class << self
     attr_accessor :timeout_scale
     attr_reader :original_internal_encoding, :original_external_encoding,
-                :original_verbose
+                :original_verbose, :original_warning
 
     def capture_global_values
       @original_internal_encoding = Encoding.default_internal
       @original_external_encoding = Encoding.default_external
       @original_verbose = $VERBOSE
+      @original_warning = %i[deprecated experimental].to_h {|i| [i, Warning[i]]}
     end
   end
 
@@ -86,7 +87,20 @@ module EnvUtil
     when nil, false
       pgroup = pid
     end
+
+    lldb = true if /darwin/ =~ RUBY_PLATFORM
+
     while signal = signals.shift
+
+      if lldb and [:ABRT, :KILL].include?(signal)
+        lldb = false
+        # sudo -n: --non-interactive
+        # lldb -p: attach
+        #      -o: run command
+        system(*%W[sudo -n lldb -p #{pid} --batch -o bt\ all -o call\ rb_vmdebug_stack_dump_all_threads() -o quit])
+        true
+      end
+
       begin
         Process.kill signal, pgroup
       rescue Errno::EINVAL
@@ -100,6 +114,8 @@ module EnvUtil
         begin
           Timeout.timeout(reprieve) {Process.wait(pid)}
         rescue Timeout::Error
+        else
+          break
         end
       end
     end
@@ -134,6 +150,7 @@ module EnvUtil
     if RUBYLIB and lib = child_env["RUBYLIB"]
       child_env["RUBYLIB"] = [lib, RUBYLIB].join(File::PATH_SEPARATOR)
     end
+    child_env['ASAN_OPTIONS'] = ENV['ASAN_OPTIONS'] if ENV['ASAN_OPTIONS']
     args = [args] if args.kind_of?(String)
     pid = spawn(child_env, *precommand, rubybin, *args, **opt)
     in_c.close
@@ -182,11 +199,6 @@ module EnvUtil
   end
   module_function :invoke_ruby
 
-  alias rubyexec invoke_ruby
-  class << self
-    alias rubyexec invoke_ruby
-  end
-
   def verbose_warning
     class << (stderr = "".dup)
       alias write concat
@@ -199,6 +211,7 @@ module EnvUtil
   ensure
     stderr, $stderr = $stderr, stderr
     $VERBOSE = EnvUtil.original_verbose
+    EnvUtil.original_warning.each {|i, v| Warning[i] = v}
   end
   module_function :verbose_warning
 
