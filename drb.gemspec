@@ -2,7 +2,7 @@ require_relative 'lib/drb/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "drb"
-  spec.version       = Drb::VERSION
+  spec.version       = DRb::VERSION
   spec.authors       = ["Masatoshi SEKI"]
   spec.email         = ["seki@ruby-lang.org"]
 

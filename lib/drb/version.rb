@@ -1,3 +1,3 @@
-module Drb
-  VERSION = "0.1.0"
+module DRb
+  VERSION = "2.0.4"
 end
