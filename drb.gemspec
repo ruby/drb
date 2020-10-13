@@ -1,4 +1,8 @@
-require_relative 'lib/drb/version'
+begin
+  require_relative "lib/drb/version"
+rescue LoadError # Fallback to load version file in ruby core repository
+  require_relative "version"
+end
 
 Gem::Specification.new do |spec|
   spec.name          = "drb"
