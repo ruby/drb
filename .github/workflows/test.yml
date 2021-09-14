@@ -1,6 +1,10 @@
 name: test
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 
 jobs:
   test:
@@ -16,7 +20,6 @@ jobs:
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: ${{ matrix.ruby }}
-    - name: Install dependencies
-      run: bundle install
+        bundler-cache: true # 'bundle install' and cache results
     - name: Run test
-      run: rake test
+      run: bundle exec rake
