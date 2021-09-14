@@ -1,9 +1,9 @@
-name: build
+name: test
 
 on: [push, pull_request]
 
 jobs:
-  build:
+  test:
     name: build (${{ matrix.ruby }} / ${{ matrix.os }})
     strategy:
       matrix:
