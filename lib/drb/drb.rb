@@ -49,6 +49,7 @@
 require 'socket'
 require 'io/wait'
 require 'monitor'
+require 'weakref'
 require_relative 'eq'
 
 #
@@ -357,26 +358,66 @@ module DRb
   # For alternative mechanisms, see DRb::TimerIdConv in drb/timeridconv.rb
   # and DRbNameIdConv in sample/name.rb in the full drb distribution.
   class DRbIdConv
+    MUTEX = Mutex.new
+
+    def initialize
+      @id2ref = {}
+    end
 
     # Convert an object reference id to an object.
-    #
-    # This implementation looks up the reference id in the local object
-    # space and returns the object it refers to.
+    # and returns the object it refers to.
     def to_obj(ref)
-      ObjectSpace._id2ref(ref)
+      _get(ref)
     end
 
     # Convert an object into a reference id.
-    #
-    # This implementation returns the object's __id__ in the local
-    # object space.
     def to_id(obj)
-      case obj
-      when Object
-        obj.nil? ? nil : obj.__id__
-      when BasicObject
-        obj.__id__
+      obj.nil? ? nil : _put(obj)
+    end
+
+    private def _safe_lock
+      Thread.handle_interrupt(Exception => :never) do
+        MUTEX.lock
+        begin
+          yield
+        ensure
+          MUTEX.unlock
+        end
       end
+    end
+
+    private def _put(obj)
+      id = obj.__id__
+      _safe_lock do
+        _clean_locked
+        @id2ref[id] = WeakRef.new(obj)
+      end
+      id
+    end
+
+    private def _get(id)
+      _safe_lock do
+        weakref = @id2ref[id]
+        if weakref
+          result = weakref.__getobj__ rescue nil
+          if result
+            return result
+          else
+            @id2ref.delete id
+          end
+        end
+      end
+      nil
+    end
+
+    private def _clean
+      _safe_lock { _clean_locked }
+    end
+
+    private def _clean_locked
+      dead = []
+      @id2ref.each { |id, weakref| dead << id unless weakref.weakref_alive? }
+      dead.each { |id| @id2ref.delete(id) }
     end
   end
 
