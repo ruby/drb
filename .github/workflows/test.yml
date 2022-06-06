@@ -14,7 +14,7 @@ jobs:
     steps:
       - id: versions
         run: |
-          versions=$(curl -s 'https://cache.ruby-lang.org/pub/misc/ci_versions/all.json' | jq -c )
+          versions=$(curl -s 'https://cache.ruby-lang.org/pub/misc/ci_versions/cruby.json' | jq -c )
           echo "::set-output name=value::${versions}"
   test:
     needs: ruby-versions
