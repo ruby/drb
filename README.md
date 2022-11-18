@@ -39,7 +39,7 @@ starting the server code first.
 
 #### Server code
 
-```
+```rb
 require 'drb/drb'
 
 # The URI for the server to connect to
@@ -63,7 +63,7 @@ DRb.thread.join
 
 #### Client code
 
-```
+```rb
 require 'drb/drb'
 
 # The URI to connect to
