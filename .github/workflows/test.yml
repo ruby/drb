@@ -8,14 +8,9 @@ on:
 
 jobs:
   ruby-versions:
-    runs-on: ubuntu-latest
-    outputs:
-      versions: ${{ steps.versions.outputs.value }}
-    steps:
-      - id: versions
-        run: |
-          versions=$(curl -s 'https://cache.ruby-lang.org/pub/misc/ci_versions/cruby.json' | jq -c )
-          echo "value=${versions}" >> $GITHUB_OUTPUT
+    uses: ruby/actions/.github/workflows/ruby_versions.yml@master
+    with:
+      engine: cruby
 
   test:
     needs: ruby-versions
