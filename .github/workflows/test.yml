@@ -5,6 +5,7 @@ on:
     branches:
       - master
   pull_request:
+  workflow_dispatch:
 
 jobs:
   ruby-versions:
@@ -19,6 +20,8 @@ jobs:
       matrix:
         ruby: ${{ fromJson(needs.ruby-versions.outputs.versions) }}
         os: [ ubuntu-latest, macos-latest, windows-latest ]
+        include:
+          - { ruby: mswin, os: windows-latest }
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
