@@ -30,5 +30,6 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true # 'bundle install' and cache results
+        rubygems: latest
     - name: Run test
       run: bundle exec rake
