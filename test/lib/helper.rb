@@ -1,5 +1,5 @@
 require "test/unit"
-require_relative "core_assertions"
+require "core_assertions"
 
 require "ruby2_keywords"
 
