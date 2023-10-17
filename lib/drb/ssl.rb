@@ -79,7 +79,7 @@ module DRb
       #
       # :SSLMaxVersion ::
       #   This is the maximum SSL version to allow.  See
-      #   OpenSSL::SSL::SSLContext#min_version=.
+      #   OpenSSL::SSL::SSLContext#max_version=.
       #
       # :SSLVerifyMode ::
       #   This is the SSL verification mode.  See OpenSSL::SSL::VERIFY_* for
