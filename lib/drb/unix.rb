@@ -81,7 +81,7 @@ module DRb
             break
           end
         rescue
-          raise "cannot generate tempfile `%s'" % tmpname if n >= Max_try
+          raise "cannot generate tempfile '%s'" % tmpname if n >= Max_try
           #sleep(1)
         end
         n += 1
