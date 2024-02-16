@@ -1174,7 +1174,7 @@ module DRb
       prefix = "(#{uri}) "
       bt = []
       result.backtrace.each do |x|
-        break if /`__send__'$/ =~ x
+        break if /[`']__send__'$/ =~ x
         if /\A\(druby:\/\// =~ x
           bt.push(x)
         else
@@ -1594,26 +1594,26 @@ module DRb
     def check_insecure_method(obj, msg_id)
       return true if Proc === obj && msg_id == :__drb_yield
       raise(ArgumentError, "#{any_to_s(msg_id)} is not a symbol") unless Symbol == msg_id.class
-      raise(SecurityError, "insecure method `#{msg_id}'") if insecure_method?(msg_id)
+      raise(SecurityError, "insecure method '#{msg_id}'") if insecure_method?(msg_id)
 
       case obj
       when Object
         if obj.private_methods.include?(msg_id)
           desc = any_to_s(obj)
-          raise NoMethodError, "private method `#{msg_id}' called for #{desc}"
+          raise NoMethodError, "private method '#{msg_id}' called for #{desc}"
         elsif obj.protected_methods.include?(msg_id)
           desc = any_to_s(obj)
-          raise NoMethodError, "protected method `#{msg_id}' called for #{desc}"
+          raise NoMethodError, "protected method '#{msg_id}' called for #{desc}"
         else
           true
         end
       else
         if Kernel.instance_method(:private_methods).bind(obj).call.include?(msg_id)
           desc = any_to_s(obj)
-          raise NoMethodError, "private method `#{msg_id}' called for #{desc}"
+          raise NoMethodError, "private method '#{msg_id}' called for #{desc}"
         elsif Kernel.instance_method(:protected_methods).bind(obj).call.include?(msg_id)
           desc = any_to_s(obj)
-          raise NoMethodError, "protected method `#{msg_id}' called for #{desc}"
+          raise NoMethodError, "protected method '#{msg_id}' called for #{desc}"
         else
           true
         end

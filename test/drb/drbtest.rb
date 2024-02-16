@@ -234,26 +234,26 @@ module DRbCore
     e = assert_raise(NoMethodError) {
       @there.method_missing(:eval, 'nil')
     }
-    assert_match(/^private method \`eval\'/, e.message)
+    assert_match(/^private method [`']eval\'/, e.message)
 
     e = assert_raise(NoMethodError) {
       @there.call_private_method
     }
-    assert_match(/^private method \`call_private_method\'/, e.message)
+    assert_match(/^private method [`']call_private_method\'/, e.message)
   end
 
   def test_07_protected_missing
     e = assert_raise(NoMethodError) {
       @there.call_protected_method
     }
-    assert_match(/^protected method \`call_protected_method\'/, e.message)
+    assert_match(/^protected method [`']call_protected_method\'/, e.message)
   end
 
   def test_07_public_missing
     e = assert_raise(NoMethodError) {
       @there.method_missing(:undefined_method_test)
     }
-    assert_match(/^undefined method \`undefined_method_test\'/, e.message)
+    assert_match(/^undefined method [`']undefined_method_test\'/, e.message)
   end
 
   def test_07_send_missing
