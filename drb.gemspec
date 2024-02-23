@@ -38,6 +38,4 @@ Gem::Specification.new do |spec|
     lib/drb/weakidconv.rb
   ]
   spec.require_paths = ["lib"]
-
-  spec.add_dependency "ruby2_keywords"
 end
