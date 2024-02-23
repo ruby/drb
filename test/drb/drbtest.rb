@@ -90,7 +90,7 @@ module DRbBase
   end
 
   def teardown
-    return if @omitted
+    return if instance_variable_defined?(:@omitted) && @omitted
     @ext.stop_service if defined?(@ext) && @ext
     if defined?(@service_name) && @service_name
       @drb_service.manager.unregist(@service_name)
