@@ -51,6 +51,7 @@ require 'io/wait'
 require 'monitor'
 require_relative 'eq'
 require_relative 'version'
+require_relative 'weakidconv'
 
 #
 # == Overview
@@ -347,39 +348,6 @@ module DRb
   # Error raised when an error occurs on the underlying communication
   # protocol.
   class DRbConnError < DRbError; end
-
-  # Class responsible for converting between an object and its id.
-  #
-  # This, the default implementation, uses an object's local ObjectSpace
-  # __id__ as its id.  This means that an object's identification over
-  # drb remains valid only while that object instance remains alive
-  # within the server runtime.
-  #
-  # For alternative mechanisms, see DRb::TimerIdConv in drb/timeridconv.rb
-  # and DRbNameIdConv in sample/name.rb in the full drb distribution.
-  class DRbIdConv
-
-    # Convert an object reference id to an object.
-    #
-    # This implementation looks up the reference id in the local object
-    # space and returns the object it refers to.
-    def to_obj(ref)
-      ObjectSpace._id2ref(ref)
-    end
-
-    # Convert an object into a reference id.
-    #
-    # This implementation returns the object's __id__ in the local
-    # object space.
-    def to_id(obj)
-      case obj
-      when Object
-        obj.nil? ? nil : obj.__id__
-      when BasicObject
-        obj.__id__
-      end
-    end
-  end
 
   # Mixin module making an object undumpable or unmarshallable.
   #
@@ -1349,7 +1317,7 @@ module DRb
   # started by calling DRb.start_service.
   class DRbServer
     @@acl = nil
-    @@idconv = DRbIdConv.new
+    @@idconv = WeakIdConv.new
     @@secondary_server = nil
     @@argc_limit = 256
     @@load_limit = 0xffffffff
@@ -1940,4 +1908,4 @@ end
 # :stopdoc:
 DRbObject = DRb::DRbObject
 DRbUndumped = DRb::DRbUndumped
-DRbIdConv = DRb::DRbIdConv
+DRbIdConv = DRb::WeakIdConv
