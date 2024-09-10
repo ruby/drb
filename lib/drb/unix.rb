@@ -96,7 +96,10 @@ module DRb
       return unless @socket
       shutdown # DRbProtocol#shutdown
       path = @socket.path if @server_mode
-      @socket.close
+      begin
+        @socket.close
+      rescue Errno::EPIPE
+      end
       File.unlink(path) if @server_mode
       @socket = nil
       close_shutdown_pipe
