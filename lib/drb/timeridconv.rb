@@ -12,7 +12,7 @@ module DRb
   #
   #  DRb.install_id_conv TimerIdConv.new 60 # one minute
 
-  class TimerIdConv < DRbIdConv
+  class TimerIdConv
     class TimerHolder2 # :nodoc:
       include MonitorMixin
 

@@ -1,14 +1,9 @@
 # frozen_string_literal: false
-require_relative 'drb'
 require 'monitor'
 
 module DRb
 
-  # To use WeakIdConv:
-  #
-  #  DRb.start_service(nil, nil, {:idconv => DRb::WeakIdConv.new})
-
-  class WeakIdConv < DRbIdConv
+  class WeakIdConv
     class WeakSet
       include MonitorMixin
       def initialize
