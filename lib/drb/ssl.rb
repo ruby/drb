@@ -185,7 +185,7 @@ module DRb
         }
 
         cert = OpenSSL::X509::Certificate.new
-        cert.version = 2
+        cert.version = 2 # This means v3
         cert.serial = 0
         name = OpenSSL::X509::Name.new(self[:SSLCertName])
         cert.subject = name
