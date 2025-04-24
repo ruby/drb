@@ -348,6 +348,39 @@ module DRb
   # protocol.
   class DRbConnError < DRbError; end
 
+  class DRbObjectSpace # :nodoc:
+    # This is an internal class for DRbIdConv. This must not be used
+    # by users.
+
+    include MonitorMixin
+
+    def initialize
+      super()
+      @map = ObjectSpace::WeakMap.new
+    end
+
+    def to_id(obj)
+      synchronize do
+        @map[obj.__id__] = obj
+        obj.__id__
+      end
+    end
+
+    def to_obj(ref)
+      synchronize do
+        obj = @map[ref]
+        raise RangeError.new("invalid reference") unless obj.__id__ == ref
+        obj
+      end
+    end
+  end
+
+  # :nodoc:
+  #
+  # This is an internal singleton instance. This must not be used
+  # by users.
+  DRB_OBJECT_SPACE = DRbObjectSpace.new
+
   # Class responsible for converting between an object and its id.
   #
   # This, the default implementation, uses an object's local ObjectSpace
@@ -364,7 +397,7 @@ module DRb
     # This implementation looks up the reference id in the local object
     # space and returns the object it refers to.
     def to_obj(ref)
-      ObjectSpace._id2ref(ref)
+      DRB_OBJECT_SPACE.to_obj(ref)
     end
 
     # Convert an object into a reference id.
@@ -372,12 +405,7 @@ module DRb
     # This implementation returns the object's __id__ in the local
     # object space.
     def to_id(obj)
-      case obj
-      when Object
-        obj.nil? ? nil : obj.__id__
-      when BasicObject
-        obj.__id__
-      end
+      (nil == obj) ? nil : DRB_OBJECT_SPACE.to_id(obj)
     end
   end
 

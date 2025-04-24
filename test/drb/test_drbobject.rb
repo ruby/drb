@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'envutil'
 require 'drb'
 require 'drb/timeridconv'
 require 'drb/weakidconv'
@@ -64,6 +65,7 @@ class TestDRbObjectWeakIdConv < Test::Unit::TestCase
   include DRbObjectTest
 
   def setup
-    DRb.start_service(nil, nil, {:idconv => DRb::WeakIdConv.new})
+    idconv = EnvUtil.suppress_warning {DRb::WeakIdConv.new}
+    DRb.start_service(nil, nil, {:idconv => idconv})
   end
 end
