@@ -1,9 +1,14 @@
 name: Release
 on:
   push:
+    branches:
+      - "**"
+      - "!dependabot/**"
     tags:
-      - "*"
+      - "**"
+  pull_request:
 jobs:
+  github:
     name: GitHub
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -18,6 +23,7 @@ jobs:
                        gsub(/\[(.+?)\]\[.+?\]/) {$1})' \
             NEWS.md | tee release-note.md
       - name: Upload to release
+        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -42,6 +48,11 @@ jobs:
           ruby-version: ruby
           bundler-cache: true
       - uses: rubygems/configure-rubygems-credentials@v1.0.0
-      - name: Push gems
+        if: github.ref_type == 'tag'
+      - name: Build
+        run: |
+          bundle exec rake build
+      - name: Push
+        if: github.ref_type == 'tag'
         run: |
           bundle exec rake release:rubygem_push
