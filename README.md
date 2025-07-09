@@ -83,6 +83,15 @@ timeserver = DRbObject.new_with_uri(SERVER_URI)
 puts timeserver.get_current_time
 ```
 
+#### Security
+
+As DRb allows remote clients to invoke arbitrary methods, it is not suitable to
+expose to untrusted clients.
+
+When using DRb, try to avoid exposing it over the network if possible. If this
+isn't possible and you need to expose DRb to the world, you *must* configure an
+appropriate security policy with +DRb::ACL+.
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
@@ -92,4 +101,3 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/ruby/drb.
-
