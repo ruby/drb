@@ -170,19 +170,7 @@ module DRb
           return
         end
 
-        rsa = OpenSSL::PKey::RSA.new(2048){|p, n|
-          next unless self[:verbose]
-          case p
-          when 0; $stderr.putc "."  # BN_generate_prime
-          when 1; $stderr.putc "+"  # BN_generate_prime
-          when 2; $stderr.putc "*"  # searching good prime,
-                                    # n = #of try,
-                                    # but also data from BN_generate_prime
-          when 3; $stderr.putc "\n" # found good prime, n==0 - p, n==1 - q,
-                                    # but also data from BN_generate_prime
-          else;   $stderr.putc "*"  # BN_generate_prime
-          end
-        }
+        rsa = OpenSSL::PKey::RSA.new(2048)
 
         cert = OpenSSL::X509::Certificate.new
         cert.version = 2 # This means v3
