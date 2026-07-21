@@ -37,18 +37,16 @@ starting the server code first.
 require 'drb/drb'
 
 # The URI for the server to connect to
-URI="druby://localhost:8787"
+URI = 'druby://localhost:8787'
 
 class TimeServer
-
-  def get_current_time
-    return Time.now
+  def current_time
+    Time.now
   end
-
 end
 
 # The object that handles requests on the server
-FRONT_OBJECT=TimeServer.new
+FRONT_OBJECT = TimeServer.new
 
 DRb.start_service(URI, FRONT_OBJECT)
 # Wait for the drb server thread to finish before exiting.
@@ -61,7 +59,7 @@ DRb.thread.join
 require 'drb/drb'
 
 # The URI to connect to
-SERVER_URI="druby://localhost:8787"
+SERVER_URI = 'druby://localhost:8787'
 
 # Start a local DRbServer to handle callbacks.
 
@@ -74,7 +72,7 @@ SERVER_URI="druby://localhost:8787"
 DRb.start_service
 
 timeserver = DRbObject.new_with_uri(SERVER_URI)
-puts timeserver.get_current_time
+puts timeserver.current_time
 ```
 
 #### Security
