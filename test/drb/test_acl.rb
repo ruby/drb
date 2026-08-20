@@ -5,7 +5,7 @@
 # acltest.rb is copyrighted free software by Masatoshi SEKI.
 # You can redistribute it and/or modify it under the same terms as Ruby.
 
-require 'test/unit'
+require_relative '../lib/helper'
 require 'drb/acl'
 
 module DRbTests

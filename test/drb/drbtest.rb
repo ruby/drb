@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require 'test/unit'
+require_relative '../lib/helper'
 require 'envutil'
 require 'drb/drb'
 require 'drb/extservm'

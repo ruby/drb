@@ -1,4 +1,4 @@
-require 'test/unit'
+require_relative '../lib/helper'
 require 'envutil'
 require 'drb'
 require 'drb/timeridconv'
