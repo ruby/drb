@@ -47,7 +47,7 @@ module DRb
     def register(name, ro)
       synchronize do
         @servers[name] = ro
-        @cond.signal
+        @cond.broadcast
       end
       self
     end
