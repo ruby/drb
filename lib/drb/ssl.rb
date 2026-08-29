@@ -259,10 +259,17 @@ module DRb
     def self.open(uri, config)
       host, port, = parse_uri(uri)
       soc = TCPSocket.open(host, port)
-      ssl_conf = SSLConfig::new(config)
-      ssl_conf.setup_ssl_context
-      ssl = ssl_conf.connect(soc)
-      self.new(uri, ssl, ssl_conf, true)
+      stream = soc
+      begin
+        ssl_conf = SSLConfig::new(config)
+        ssl_conf.setup_ssl_context
+        ssl = ssl_conf.connect(soc)
+        stream = ssl
+        self.new(uri, ssl, ssl_conf, true)
+      rescue Exception
+        stream.close
+        raise
+      end
     end
 
     # Returns a DRb::DRbSSLSocket instance as a server-side connection, with
@@ -286,10 +293,15 @@ module DRb
       port = soc.addr[1] if port == 0
       @uri = "drbssl://#{host}:#{port}"
 
-      ssl_conf = SSLConfig.new(config)
-      ssl_conf.setup_certificate
-      ssl_conf.setup_ssl_context
-      self.new(@uri, soc, ssl_conf, false)
+      begin
+        ssl_conf = SSLConfig.new(config)
+        ssl_conf.setup_certificate
+        ssl_conf.setup_ssl_context
+        self.new(@uri, soc, ssl_conf, false)
+      rescue Exception
+        soc.close
+        raise
+      end
     end
 
     # This is a convenience method to parse +uri+ and separate out any
