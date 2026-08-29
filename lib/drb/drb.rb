@@ -1296,7 +1296,14 @@ module DRb
               new_pool = []
               pool.each do |c|
                 if conn.nil? and c.uri == remote_uri
-                  conn = c if c.alive?
+                  begin
+                    conn = c if c.alive?
+                  rescue StandardError
+                    begin
+                      c.close
+                    rescue StandardError
+                    end
+                  end
                 else
                   new_pool.push c
                 end
@@ -1306,7 +1313,12 @@ module DRb
             when :store then
               conn = message[1]
               pool.unshift(conn)
-              pool.pop.close while pool.size > POOL_SIZE
+              while pool.size > POOL_SIZE
+                begin
+                  pool.pop.close
+                rescue StandardError
+                end
+              end
               conn
             else
               nil
