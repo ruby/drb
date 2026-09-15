@@ -41,7 +41,7 @@
 #   Translation of presentation on Ruby by Masatoshi Seki.
 
 require 'socket'
-require 'io/wait'
+require 'io/wait' if RUBY_VERSION < '3.2'
 require 'monitor'
 require_relative 'eq'
 require_relative 'version'
