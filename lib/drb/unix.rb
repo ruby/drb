@@ -40,18 +40,27 @@ module DRb
       else
         soc = UNIXServer.open(filename)
       end
-      owner = config[:UNIXFileOwner]
-      group = config[:UNIXFileGroup]
-      if owner || group
-        require 'etc'
-        owner = Etc.getpwnam( owner ).uid  if owner
-        group = Etc.getgrnam( group ).gid  if group
-        File.chown owner, group, filename
-      end
-      mode = config[:UNIXFileMode]
-      File.chmod(mode, filename) if mode
+      begin
+        owner = config[:UNIXFileOwner]
+        group = config[:UNIXFileGroup]
+        if owner || group
+          require 'etc'
+          owner = Etc.getpwnam( owner ).uid  if owner
+          group = Etc.getgrnam( group ).gid  if group
+          File.chown owner, group, filename
+        end
+        mode = config[:UNIXFileMode]
+        File.chmod(mode, filename) if mode
 
-      self.new(uri, soc, config, true)
+        self.new(uri, soc, config, true)
+      rescue Exception
+        soc.close
+        begin
+          File.unlink(filename)
+        rescue Errno::ENOENT
+        end
+        raise
+      end
     end
 
     def self.uri_option(uri, config)
@@ -97,8 +106,11 @@ module DRb
       shutdown # DRbProtocol#shutdown
       path = @socket.path if @server_mode
       @socket.close
-      File.unlink(path) if @server_mode
       @socket = nil
+      begin
+        File.unlink(path) if @server_mode
+      rescue Errno::ENOENT
+      end
       close_shutdown_pipe
     end
 
