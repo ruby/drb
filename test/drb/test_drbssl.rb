@@ -79,6 +79,60 @@ class TestDRbSSLAry < Test::Unit::TestCase
 end
 
 
+class TestDRbSSLContext < Test::Unit::TestCase
+  def setup
+    if RUBY_PLATFORM.match?(/mswin|mingw/)
+      omit 'This test seems to randomly hang on Windows'
+    end
+    @cert, key = generate_certificate
+    server_ctx = OpenSSL::SSL::SSLContext.new
+    server_ctx.add_certificate(@cert, key)
+    @server = DRb::DRbServer.new('drbssl://localhost:0', nil,
+                                 {SSLContext: server_ctx})
+    begin
+      yield
+    ensure
+      @server.stop_service
+    end
+  end
+
+  def test_ssl_context
+    ctx = OpenSSL::SSL::SSLContext.new
+    client = DRb::DRbSSLSocket.open(@server.uri, {SSLContext: ctx})
+    begin
+      assert_equal([ctx, @cert.to_der],
+                   [client.stream.context, client.stream.peer_cert.to_der])
+    ensure
+      client.close
+    end
+  end
+
+  def test_basic_ssl_config
+    ctx = OpenSSL::SSL::SSLContext.new
+    config = DRb::DRbSSLSocket::BasicSSLConfig.new({}, ctx)
+    client = DRb::DRbSSLSocket.open(@server.uri, config)
+    begin
+      assert_same(ctx, client.stream.context)
+    ensure
+      client.close
+    end
+  end
+
+  private
+  def generate_certificate
+    key = OpenSSL::PKey::RSA.new(2048)
+    cert = OpenSSL::X509::Certificate.new
+    name = OpenSSL::X509::Name.new([["CN", "localhost"]])
+    cert.subject = name
+    cert.issuer = name
+    cert.not_before = Time.now
+    cert.not_after = Time.now + 3600
+    cert.public_key = key
+    cert.sign(key, "SHA256")
+    [cert, key]
+  end
+end
+
 end
 
 end
