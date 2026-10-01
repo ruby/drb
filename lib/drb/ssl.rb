@@ -10,7 +10,70 @@ module DRb
   #
   # The URI for a DRb socket over SSL is:
   # <code>drbssl://<host>:<port>?<option></code>.  The option is optional
+  #
+  # SSL is configured by the :SSL* config options.  See
+  # DRb::DRbSSLSocket::SSLConfig.new for them.
+  #
+  # You can also specify an OpenSSL::SSL::SSLContext by the :SSLContext
+  # config option.  If the :SSLContext config option is specified, it's
+  # used as-is and the other :SSL* config options are ignored.  This is
+  # useful to use features that aren't covered by the :SSL* config
+  # options:
+  #
+  #   require 'drb/ssl'
+  #   ctx = OpenSSL::SSL::SSLContext.new
+  #   ctx.add_certificate(cert, key)
+  #   ctx.groups = "X25519MLKEM768:X25519"
+  #   DRb.start_service('drbssl://localhost:0', front, SSLContext: ctx)
   class DRbSSLSocket < DRbTCPSocket
+
+    # BasicSSLConfig uses the given OpenSSL::SSL::SSLContext as-is for
+    # establishing a DRbSSLSocket connection.
+    #
+    # This is used when the :SSLContext config option is specified.  An
+    # instance of this config can also be passed to DRbSSLSocket.new,
+    # DRbSSLSocket.open and DRbSSLSocket.open_server
+    class BasicSSLConfig
+      # Create a new DRb::DRbSSLSocket::BasicSSLConfig instance.
+      #
+      # +config+ is a Hash.  +ssl_ctx+ is an OpenSSL::SSL::SSLContext
+      # used for connections.
+      def initialize(config, ssl_ctx)
+        @config  = config
+        @ssl_ctx = ssl_ctx
+      end
+
+      # A convenience method to access the values like a Hash
+      def [](key)
+        @config[key]
+      end
+
+      # Connect to IO +tcp+, with context of the current certificate
+      # configuration
+      def connect(tcp)
+        ssl = ::OpenSSL::SSL::SSLSocket.new(tcp, @ssl_ctx)
+        ssl.sync = true
+        ssl.connect
+        ssl
+      end
+
+      # Accept connection to IO +tcp+, with context of the current certificate
+      # configuration
+      def accept(tcp)
+        ssl = ::OpenSSL::SSL::SSLSocket.new(tcp, @ssl_ctx)
+        ssl.sync = true
+        ssl.accept
+        ssl
+      end
+
+      # Does nothing.  The certificate must be set in +ssl_ctx+.
+      def setup_certificate
+      end
+
+      # Does nothing.  +ssl_ctx+ is used as-is.
+      def setup_ssl_context
+      end
+    end
 
     # SSLConfig handles the needed SSL information for establishing a
     # DRbSSLSocket connection, including generating the X509 / RSA pair.
@@ -19,7 +82,7 @@ module DRb
     # DRbSSLSocket.open and DRbSSLSocket.open_server
     #
     # See DRb::DRbSSLSocket::SSLConfig.new for more details
-    class SSLConfig
+    class SSLConfig < BasicSSLConfig
 
       # Default values for a SSLConfig instance.
       #
@@ -133,33 +196,14 @@ module DRb
       #   c.setup_certificate
       #
       def initialize(config)
-        @config  = config
+        super(config, nil)
         @cert    = config[:SSLCertificate]
         @pkey    = config[:SSLPrivateKey]
-        @ssl_ctx = nil
       end
 
       # A convenience method to access the values like a Hash
       def [](key);
-        @config[key] || DEFAULT[key]
-      end
-
-      # Connect to IO +tcp+, with context of the current certificate
-      # configuration
-      def connect(tcp)
-        ssl = ::OpenSSL::SSL::SSLSocket.new(tcp, @ssl_ctx)
-        ssl.sync = true
-        ssl.connect
-        ssl
-      end
-
-      # Accept connection to IO +tcp+, with context of the current certificate
-      # configuration
-      def accept(tcp)
-        ssl = OpenSSL::SSL::SSLSocket.new(tcp, @ssl_ctx)
-        ssl.sync = true
-        ssl.accept
-        ssl
+        super || DEFAULT[key]
       end
 
       # Ensures that :SSLCertificate and :SSLPrivateKey have been provided
@@ -218,6 +262,17 @@ module DRb
       end
     end
 
+    def self.ensure_ssl_config(config)
+      return config if config.is_a?(BasicSSLConfig)
+
+      if ssl_ctx = config[:SSLContext]
+        BasicSSLConfig.new(config, ssl_ctx)
+      else
+        SSLConfig.new(config)
+      end
+    end
+    private_class_method :ensure_ssl_config
+
     # Parse the dRuby +uri+ for an SSL connection.
     #
     # Expects drbssl://...
@@ -243,11 +298,12 @@ module DRb
     #
     # +uri+ is the URI we are connected to,
     # <code>'drbssl://localhost:0'</code> above, +config+ is our
-    # configuration.  Either a Hash or DRb::DRbSSLSocket::SSLConfig
+    # configuration.  Either a Hash, DRb::DRbSSLSocket::BasicSSLConfig or
+    # DRb::DRbSSLSocket::SSLConfig
     def self.open(uri, config)
       host, port, = parse_uri(uri)
       soc = TCPSocket.open(host, port)
-      ssl_conf = SSLConfig::new(config)
+      ssl_conf = ensure_ssl_config(config)
       ssl_conf.setup_ssl_context
       ssl = ssl_conf.connect(soc)
       self.new(uri, ssl, ssl_conf, true)
@@ -261,7 +317,8 @@ module DRb
     #
     # +uri+ is the URI we are connected to,
     # <code>'drbssl://localhost:0'</code> above, +config+ is our
-    # configuration.  Either a Hash or DRb::DRbSSLSocket::SSLConfig
+    # configuration.  Either a Hash, DRb::DRbSSLSocket::BasicSSLConfig or
+    # DRb::DRbSSLSocket::SSLConfig
     def self.open_server(uri, config)
       uri = 'drbssl://:0' unless uri
       host, port, = parse_uri(uri)
@@ -274,7 +331,7 @@ module DRb
       port = soc.addr[1] if port == 0
       @uri = "drbssl://#{host}:#{port}"
 
-      ssl_conf = SSLConfig.new(config)
+      ssl_conf = ensure_ssl_config(config)
       ssl_conf.setup_certificate
       ssl_conf.setup_ssl_context
       self.new(@uri, soc, ssl_conf, false)
@@ -295,7 +352,8 @@ module DRb
     #
     # +uri+ is the URI we are connected to.
     # +soc+ is the tcp socket we are bound to.
-    # +config+ is our configuration. Either a Hash or SSLConfig
+    # +config+ is our configuration.  Either a Hash, BasicSSLConfig or
+    # SSLConfig
     # +is_established+ is a boolean of whether +soc+ is currently established
     #
     # This is called automatically based on the DRb protocol.
