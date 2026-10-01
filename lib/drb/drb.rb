@@ -363,7 +363,7 @@ module DRb
     def to_obj(ref)
       synchronize do
         obj = @map[ref]
-        raise RangeError.new("invalid reference") unless obj.__id__ == ref
+        raise RangeError.new("invalid reference") if obj.equal?(nil) || obj.__id__ != ref
         obj
       end
     end
